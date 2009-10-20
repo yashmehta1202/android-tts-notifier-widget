@@ -43,7 +43,7 @@ public class NotifyService extends Service
 	private Intent mIntent;
 	
 	private TextToSpeech mTts;
-	private boolean mRead;
+	private boolean mReady;
 	private int mSysVol;
 
 	private AudioManager mAudioManager;
@@ -79,7 +79,7 @@ public class NotifyService extends Service
 	@Override
 	public void onInit(int status) {
 		
-		mRead = true;
+		mReady = true;
 		mTts.setOnUtteranceCompletedListener(this);
 		
 		synchronized (sLock) {
@@ -109,7 +109,7 @@ public class NotifyService extends Service
 	@Override
 	public void run() {
 
-		while (! mRead) {
+		while (! mReady) {
 			
 			synchronized (sLock) {
 				try {
