@@ -30,7 +30,7 @@
 			</intent-filter>
 		</receiver>
 		
-		<receiver android:name=".NotifyWidget" android:label="Phone Voice">
+		<receiver android:name=".NotifyWidget" android:label="PhoneVoice">
     		<intent-filter>
         		<action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
         	</intent-filter>
