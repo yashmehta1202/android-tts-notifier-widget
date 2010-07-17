@@ -47,8 +47,7 @@ public class HowTo extends Activity {
 		
 		sb.append("<h2>Adding the PhoneVoice widget</h2>")
 		.append("\u00BB <b>Long press</b> an empty space on your home screen.<br />")
-		.append("\u00BB Choose <b>Add</b>.<br />")
-		.append("\u00BB Choose <b>Widget</b>.<br />")
+		.append("\u00BB Choose <b>Widgets</b>.<br />")
 		.append("\u00BB Choose <b>PhoneVoice</b>.<br /><br />");
 		
 		Spanned ss = Html.fromHtml(sb.toString());
