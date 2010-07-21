@@ -27,6 +27,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.media.AudioManager;
+import android.net.Uri;
 import android.os.IBinder;
 import android.provider.Contacts;
 import android.speech.tts.TextToSpeech;
@@ -40,6 +41,12 @@ public class NotifyService extends Service
 	implements OnInitListener, OnUtteranceCompletedListener, Runnable {
 
 	private static final String TAG = "PhoneVoiceService";
+	private static final String[] PROJECTION = 
+		new String[] { Contacts.Phones.DISPLAY_NAME };
+	private static final String STREAM_SYSTEM_STR = 
+		String.valueOf(AudioManager.STREAM_SYSTEM);
+	private static final String UNKNOWN_NUMBER = "unknown number";
+	
 	private Intent mIntent;
 	
 	private TextToSpeech mTts;
@@ -63,6 +70,7 @@ public class NotifyService extends Service
 		if (mTts == null) {
 			mTts = new TextToSpeech(this, this);
 		}
+		
 		mAudioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
 	}
 	
@@ -152,8 +160,7 @@ public class NotifyService extends Service
 						HashMap<String, String> ops = new HashMap<String, String>();
 						
 						ops.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "call");
-						ops.put(TextToSpeech.Engine.KEY_PARAM_STREAM, 
-								String.valueOf(STREAM_SYSTEM));
+						ops.put(TextToSpeech.Engine.KEY_PARAM_STREAM, STREAM_SYSTEM_STR);
 						mTts.speak("Phone call from " + name, TextToSpeech.QUEUE_FLUSH, ops);
 					}					
 					
@@ -184,8 +191,7 @@ public class NotifyService extends Service
 						am.getStreamMaxVolume(STREAM_SYSTEM), 0);
 				
 				ops.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "sms");
-				ops.put(TextToSpeech.Engine.KEY_PARAM_STREAM, 
-						String.valueOf(STREAM_SYSTEM));
+				ops.put(TextToSpeech.Engine.KEY_PARAM_STREAM, STREAM_SYSTEM_STR);
 				
 				mTts.speak("text message from " + findContactFromNumber(from), 
 						TextToSpeech.QUEUE_FLUSH, ops);
@@ -197,6 +203,7 @@ public class NotifyService extends Service
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
+		
 		if (mTts != null) {
 			mTts.shutdown();
 			mTts = null;
@@ -206,46 +213,42 @@ public class NotifyService extends Service
 	private String findContactFromNumber(String number) {
 		
 		if (number == null) {
-			return "unknown number";
+			return UNKNOWN_NUMBER;
 		}
 		
-		String normalFormat = null;
+		String name = filteredQuery(number);
 		
-		if (number.startsWith("+")) {
+		if (name == null && number.charAt(0) == '+') {
 			//convert +<international-code><number> to readable format
 			//<number> is normally 10 digits
-			normalFormat = "0" + number.substring(number.length() - 10);
+			number = "0" + number.substring(number.length() - 10);
+			
+			name = filteredQuery(number);
 		}
 		
-		String selection = Contacts.Phones.NUMBER + " = ?";
-		
-		if (normalFormat != null) selection += " OR " + Contacts.Phones.NUMBER + " = ?";
-		
-		final String[] args = new String[(normalFormat == null ? 1 : 2)];
-		args[0] = number;
-		
-		if (normalFormat != null) args[1] = normalFormat;
-		
-		Cursor c = getContentResolver().query(Contacts.Phones.CONTENT_URI, 
-				new String[] {Contacts.Phones.DISPLAY_NAME}, 
-				selection, 
-				args, null);
-		
-		String name = null;
-		
-		if (c.moveToFirst()) {
-			name = c.getString(c.getColumnIndex(Contacts.Phones.DISPLAY_NAME));
-		}
-		
-		else {
-			name = "unknown number";
-		}
-		
-		c.close();
-		
-		return name;
+		return name == null ? UNKNOWN_NUMBER : name;
 	}
 
+	private String filteredQuery(String number) {
+		
+		String result = null;
+		
+		Uri filtered = Uri.withAppendedPath(
+				Contacts.Phones.CONTENT_FILTER_URL, number);
+		
+		Cursor nameCursor = getContentResolver().query(filtered, 
+				PROJECTION, null, null, null);
+		
+		if (nameCursor.moveToFirst()) {
+			result = nameCursor.getString(
+					nameCursor.getColumnIndex(Contacts.Phones.DISPLAY_NAME));
+		}
+		
+		nameCursor.close();
+		
+		return result;
+	}
+	
 	static void start(Context ctx, Intent intent) {
 		ctx.startService(intent);
 	}

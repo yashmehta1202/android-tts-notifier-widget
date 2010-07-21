@@ -50,7 +50,12 @@ public class HowTo extends Activity {
 		.append("\u00BB Choose <b>Widgets</b>.<br />")
 		.append("\u00BB Choose <b>PhoneVoice</b>.<br /><br />");
 		
+		sb.append("<h2>About</h2>")
+		.append("\u00BB Developed by Al (http://www.Al1UK.com / Al@Al1UK.com)<br />")
+		.append("\u00BB Source code available at http://min.ie/0Pjyl7<br />");
+		
 		Spanned ss = Html.fromHtml(sb.toString());
+
 		t.setText(ss);
 	}
 }
