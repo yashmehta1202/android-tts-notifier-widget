@@ -25,6 +25,7 @@
     	android:layout_height="wrap_content" 
     	android:id="@+id/tv"
     	android:padding="5dip"
+    	android:autoLink="web|email"
     />
 
 </ScrollView>
