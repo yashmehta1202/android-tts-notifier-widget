@@ -18,4 +18,5 @@
 -->
 <resources>  
     <string name="app_name">PhoneVoice</string>
+    <string name="howto_label">PhoneVoice Help</string>
 </resources>

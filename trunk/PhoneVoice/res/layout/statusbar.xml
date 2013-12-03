@@ -34,7 +34,7 @@
         android:orientation="vertical">
 
         <TextView
-            android:textAppearance="?android:attr/textAppearanceMediumInverse"
+            android:textAppearance="?android:attr/textAppearanceMedium"
             android:singleLine="true"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -42,7 +42,7 @@
             android:text="PhoneVoice is enabled" />
 
         <TextView
-            android:textAppearance="?android:attr/textAppearanceSmallInverse"
+            android:textAppearance="?android:attr/textAppearanceSmall"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Tap to disable PhoneVoice" />
