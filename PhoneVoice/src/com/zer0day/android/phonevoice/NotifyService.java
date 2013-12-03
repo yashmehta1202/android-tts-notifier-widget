@@ -19,30 +19,42 @@ package com.zer0day.android.phonevoice;
 import static android.media.AudioManager.STREAM_NOTIFICATION;
 import static android.media.AudioManager.STREAM_RING;
 import static android.media.AudioManager.STREAM_SYSTEM;
-
+import static android.os.Build.VERSION.SDK_INT;
 import java.util.HashMap;
 
+import android.annotation.TargetApi;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.media.AudioManager;
 import android.net.Uri;
+import android.os.Build;
+import android.os.Build.VERSION_CODES;
 import android.os.IBinder;
 import android.provider.Contacts;
+import android.provider.ContactsContract.PhoneLookup;
 import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
 import android.speech.tts.TextToSpeech.OnInitListener;
 import android.speech.tts.TextToSpeech.OnUtteranceCompletedListener;
 import android.telephony.SmsMessage;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
+@SuppressWarnings("deprecation")
+@TargetApi(Build.VERSION_CODES.KITKAT)
 public class NotifyService extends Service 
-	implements OnInitListener, OnUtteranceCompletedListener, Runnable {
+	implements OnInitListener, Runnable {
 
+	private static final boolean USE_NEW = SDK_INT >= VERSION_CODES.ECLAIR_MR1;
+	
 	private static final String TAG = "PhoneVoiceService";
 	private static final String[] PROJECTION = 
-		new String[] { Contacts.Phones.DISPLAY_NAME };
+		new String[] { 
+			(USE_NEW) ? PhoneLookup.DISPLAY_NAME : Contacts.Phones.DISPLAY_NAME
+		};
+	
 	private static final String STREAM_SYSTEM_STR = 
 		String.valueOf(AudioManager.STREAM_SYSTEM);
 	private static final String UNKNOWN_NUMBER = "unknown number";
@@ -88,16 +100,44 @@ public class NotifyService extends Service
 	public void onInit(int status) {
 		
 		mIsReady = true;
-		mTts.setOnUtteranceCompletedListener(this);
+		
+		if (SDK_INT >= VERSION_CODES.ICE_CREAM_SANDWICH_MR1) {
+			mTts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+				
+				@Override
+				public void onStart(String utteranceId) {
+					//no-op
+				}
+				
+				@Override
+				public void onError(String utteranceId) {
+					//no-op
+					
+				}
+				
+				@Override
+				public void onDone(String utteranceId) {
+					resetVolume(utteranceId);
+				}
+			});
+		}
+		
+		else {
+			mTts.setOnUtteranceCompletedListener(new OnUtteranceCompletedListener() {
+				
+				@Override
+				public void onUtteranceCompleted(String utteranceId) {
+					resetVolume(utteranceId);				
+				}
+			});
+		}
 		
 		synchronized (sLock) {
 			sLock.notify();
 		}
 	}
 	
-	@Override
-	public void onUtteranceCompleted(String utteranceId) {
-		
+	private void resetVolume(String utteranceId) {
 		synchronized (sLock) {
 			
 			if (utteranceId.equals("call")) {
@@ -233,15 +273,22 @@ public class NotifyService extends Service
 		
 		String result = null;
 		
-		Uri filtered = Uri.withAppendedPath(
-				Contacts.Phones.CONTENT_FILTER_URL, number);
+		final Uri uri = USE_NEW
+				? PhoneLookup.CONTENT_FILTER_URI
+				: Contacts.Phones.CONTENT_FILTER_URL;
+				
+		final Uri filtered = Uri.withAppendedPath(
+			uri, number);
 		
 		Cursor nameCursor = getContentResolver().query(filtered, 
 				PROJECTION, null, null, null);
 		
+		final String column = (USE_NEW)
+		? PhoneLookup.DISPLAY_NAME: Contacts.Phones.DISPLAY_NAME;
+		
 		if (nameCursor.moveToFirst()) {
 			result = nameCursor.getString(
-					nameCursor.getColumnIndex(Contacts.Phones.DISPLAY_NAME));
+					nameCursor.getColumnIndex(column));
 		}
 		
 		nameCursor.close();
